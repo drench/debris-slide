@@ -3,10 +3,15 @@ class DebrisPlayer {
     this.element = element;
     this.playList = []; // Just URLs for now. Future: timestamps, skips, etc.
     this.playPosition = -1;
+    this.stopPlaying = false;
 
     let self = this;
     this.element.addEventListener('ended', (event) => {
-      self.playNext();
+      if (self.stopPlaying) {
+        self.stopPlaying = false;
+        console.debug('Stopping the playlist');
+      }
+      else self.playNext();
     });
   }
 
