@@ -1,8 +1,8 @@
 class DebrisPlayer {
   constructor(element) {
     this.element = element;
-    this.playHistory = []; // Just URLs for now. Future: timestamps, skips, etc.
-    this.playQueue = []; // Just URLs for now. Future: timestamps, skips, etc.
+    this.playList = []; // Just URLs for now. Future: timestamps, skips, etc.
+    this.playPosition = -1;
 
     let self = this;
     this.element.addEventListener('ended', (event) => {
@@ -10,24 +10,18 @@ class DebrisPlayer {
     });
   }
 
-  playNext() {
-    let nextTrack = this.playQueue.shift();
-    if (nextTrack) {
-      this.playHistory.unshift(nextTrack);
-      this.element.src = nextTrack;
-      console.debug(`Now playing ${nextTrack}`);
-    }
-    else console.debug('the queue is empty!');
-  }
+  playNext(delta) {
+    delta ||= 1
+    let playListLength = this.playList.length;
 
-  playPrevious() {
-    let previousTrack = this.playHistory.find(t => t != this.element.src);
-    if (previousTrack) {
-      this.playHistory.unshift(previousTrack);
-      this.element.src = previousTrack;
-      console.debug(`Now playing ${previousTrack}`);
-    }
-    else console.debug('no previous track found!');
+    if (playListLength == 0) return console.debug('the playList is empty!');
+    if (!this.playList[this.playPosition + delta])
+      return console.debug('end of the playList!');
+
+    this.playPosition += delta;
+    let nextTrack = this.playList[this.playPosition];
+    this.element.src = nextTrack;
+    console.debug(`Now playing ${nextTrack}`);
   }
 }
 
