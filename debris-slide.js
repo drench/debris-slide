@@ -19,6 +19,16 @@ class DebrisPlayer {
     }
     else console.debug('the queue is empty!');
   }
+
+  playPrevious() {
+    let previousTrack = this.playHistory.find(t => t != this.element.src);
+    if (previousTrack) {
+      this.playHistory.unshift(previousTrack);
+      this.element.src = previousTrack;
+      console.debug(`Now playing ${previousTrack}`);
+    }
+    else console.debug('no previous track found!');
+  }
 }
 
 // Consider this for localStorage seralize/deserialize:
