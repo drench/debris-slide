@@ -1,7 +1,17 @@
+class DebrisTrack {
+  constructor(url) {
+    this.url = url;
+  }
+
+  toString() {
+    return this.url;
+  }
+}
+
 class DebrisPlayer {
   constructor(element) {
     this.element = element;
-    this.playList = []; // Just URLs for now. Future: timestamps, skips, etc.
+    this.playList = [];
     this.playPosition = -1;
     this.stopPlaying = false;
 
@@ -25,7 +35,7 @@ class DebrisPlayer {
 
     this.playPosition += delta;
     let nextTrack = this.playList[this.playPosition];
-    this.element.src = nextTrack;
+    this.element.src = nextTrack.url;
     console.debug(`Now playing ${nextTrack}`);
   }
 }
