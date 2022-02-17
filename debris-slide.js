@@ -1,6 +1,25 @@
 class DebrisTrack {
   constructor(url) {
     this.url = url;
+    this.hasTags = false;
+    this.storeTags();
+  }
+
+  storeTags() {
+    let self = this;
+    this.fetchTags().then(result => {
+      self.album = result.tags.album;
+      self.artist = result.tags.artist;
+      self.track = result.tags.track;
+      self.hasTags = true;
+    });
+  }
+
+  async fetchTags() {
+    let url = this.url;
+    return new Promise((resolve, reject) => {
+      jsmediatags.read(url, { onSuccess: resolve, onError: reject });
+    });
   }
 
   toString() {
@@ -23,6 +42,10 @@ class DebrisPlayer {
       }
       else self.playNext();
     });
+  }
+
+  get currentTrack() {
+    if (this.playPosition >= 0) return this.playList[this.playPosition];
   }
 
   playNext(delta) {
