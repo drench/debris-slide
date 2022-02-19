@@ -33,7 +33,10 @@ class DebrisPlayer {
     this.playList = [];
     this.playPosition = -1;
     this.stopPlaying = false;
+    this.initEventHandlers();
+  }
 
+  initEventHandlers() {
     let self = this;
     this.element.addEventListener('ended', (event) => {
       if (self.stopPlaying) {
@@ -41,6 +44,25 @@ class DebrisPlayer {
         console.debug('Stopping the playlist');
       }
       else self.playNext();
+    });
+
+    this.element.addEventListener('onchange', (event) => {
+      console.log("change!", event.target.src)
+    });
+
+    let srcObserver = new MutationObserver((mutations, observer) => {
+      mutations.forEach(mutation => {
+        document.getElementById('track_url').innerText = mutation.target.src;
+      });
+    });
+    srcObserver.observe(this.element, { attributes: true });
+
+    this.element.addEventListener('timeupdate', (event) => {
+      document.getElementById('current_time').innerText = event.target.currentTime;
+    });
+
+    this.element.addEventListener('volumechange', (event) => {
+      document.getElementById('volume').innerText = event.target.volume;
     });
   }
 
