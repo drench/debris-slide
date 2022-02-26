@@ -1,8 +1,20 @@
 class DebrisTrack {
-  constructor(url) {
-    this.url = url;
-    this.hasTags = false;
-    this.storeTags();
+  constructor(args) {
+    if (typeof(args) == "string") {
+      this.url = url;
+      this.hasTags = false;
+      this.storeTags();
+    }
+    else if (typeof(args) == "object") {
+      this.url = args.url;
+      this.album = args.album;
+      this.artist = args.artist;
+      this.track = args.track;
+      this.hasTags = true;
+    }
+    else {
+      throw "argument must either be a string or an object";
+    }
   }
 
   storeTags() {
@@ -25,6 +37,33 @@ class DebrisTrack {
   toString() {
     return this.url;
   }
+}
+
+class DebrisQueue {
+  constructor(key, store, itemClass) {
+    this.key = key;
+    this.store = store;
+    this.itemClass = itemClass;
+    this.queue = this.fetchFromStore(); // make queue private
+  }
+
+  fetchFromStore() { // make private?
+    let item = this.store.getItem(this.key);
+    return JSON.parse(item || "[]").map(i => { new itemClass(i) });
+  }
+
+  persist() { // make private?
+    this.store.setItem(this.key, JSON.stringify(this.queue));
+  }
+
+  pop() {
+    let item = this.queue.pop();
+    this.persist();
+    return item;
+  }
+
+  push(item) { this.queue.push(item); this.persist(); }
+  unshift(item) { this.queue.unshift(item); this.persist(); }
 }
 
 class DebrisPlayer {
