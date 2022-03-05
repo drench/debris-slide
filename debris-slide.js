@@ -1,3 +1,25 @@
+class DebrisLibrary {
+  constructor(key = "debris", store = window.localStorage) {
+    this.key = key
+    this.store = store;
+  }
+
+  toArray() { return JSON.parse(this.store.getItem(this.key) || '[]') }
+  toSet() { return new Set(this.toArray()) }
+
+  add(item) {
+    let set = this.toSet();
+    set.add(item);
+    this.store.setItem(this.key, JSON.stringify(Array.from(set)));
+  }
+
+  delete(item) {
+    let set = this.toSet();
+    set.delete(item);
+    this.store.setItem(this.key, JSON.stringify(Array.from(set)));
+  }
+}
+
 class DebrisTrack {
   constructor(args) {
     if (typeof(args) == "string") {
