@@ -1,92 +1,31 @@
-const DebrisFactory = function(type, ...mutables) {
+const DebrisFactory = function(type, mutables = [], callbacks = {}) {
   return new Proxy(type, {
     construct: (target, args) => new Proxy(new target(...args), {
       get: (obj, prop) => {
-        if (prop == "dirty") return obj.dirty ? true : false;
-        if (mutables.includes(prop)) obj.dirty = true;
+        if (mutables.includes(prop) && callbacks.onMutate)
+          setTimeout(callbacks.onMutate(obj, prop), 1000);
         if (typeof obj[prop] === "function") return obj[prop].bind(obj);
         else return obj[prop];
       },
       set: (obj, prop, val, _receiver) => {
         obj[prop] = val;
-        if (prop != "dirty") obj.dirty = true;
         return true;
       }
     })
   });
 };
 
-const DebrisList = DebrisFactory(Array, "fill", "pop", "push", "reverse", "shift", "slice", "sort", "splice", "unshift");
-const DebrisSet = DebrisFactory(Set, "add", "clear", "delete");
+const DebrisList = DebrisFactory(Array, ["fill", "pop", "push", "reverse", "shift", "slice", "sort", "splice", "unshift"], {
+  onMutate: (list, prop) => { sessionStorage.setItem('dl', JSON.stringify(list)) }
+});
+
+const DebrisSet = DebrisFactory(Set, ["add", "clear", "delete"], {
+  onMutate: (set, prop) => { sessionStorage.setItem('ds', JSON.stringify(Array.from(set))) }
+});
 
 class SetSerializer {
   static parse(string) { return new Set(JSON.parse(string)) }
   static stringify(set) { return JSON.stringify(Array.from(set)) }
-}
-
-class DebrisList {
-  static generator(key, store, serializer = JSON) {
-    let array = serializer.parse(store.getItem(key) || '[]');
-    let dirty = false;
-    let proxy = new Proxy(array, {
-      set: function(target, property, value, receiver) {
-        target[property] = value;
-        dirty = true;
-        return true;
-      }
-    });
-    setInterval(function () {
-      if (dirty) store.setItem(key, serializer.stringify(array));
-    }, 1000);
-
-    return proxy;
-  }
-};
-
-class OldDebrisList {
-  constructor(key, store) {
-    this.key = key
-    this.store = store;
-  }
-
-  persist(items) { return this.store.setItem(this.key, JSON.stringify(items)) }
-
-  pop() {
-    let items = this.toArray();
-    let item = items.pop();
-    this.persist(items);
-    return item;
-  }
-
-  push(item) {
-    let items = this.toArray();
-    items.push(item);
-    this.persist(items);
-    return items.length;
-  }
-
-  shift() {
-    let items = this.toArray();
-    let item = items.shift();
-    this.persist(items);
-    return item;
-  }
-
-  unshift(item) {
-    let items = this.toArray();
-    items.unshift(item);
-    this.persist(items);
-    return items.length;
-  }
-
-  toArray() { return JSON.parse(this.store.getItem(this.key) || '[]') }
-}
-
-class DebrisSet extends DebrisList {
-  persist(items) {
-    let set = new Set(items);
-    return this.store.setItem(this.key, JSON.stringify(Array.from(set)));
-  }
 }
 
 class DebrisLibrary {
