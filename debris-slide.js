@@ -1,5 +1,75 @@
+class SetSerializer {
+  static parse(string) { return new Set(JSON.parse(string)) }
+  static stringify(set) { return JSON.stringify(Array.from(set)) }
+}
+
+class DebrisList {
+  static generator(key, store, serializer = JSON) {
+    let array = serializer.parse(store.getItem(key) || '[]');
+    let dirty = false;
+    let proxy = new Proxy(array, {
+      set: function(target, property, value, receiver) {
+        target[property] = value;
+        dirty = true;
+        return true;
+      }
+    });
+    setInterval(function () {
+      if (dirty) store.setItem(key, serializer.stringify(array));
+    }, 1000);
+
+    return proxy;
+  }
+};
+
+class OldDebrisList {
+  constructor(key, store) {
+    this.key = key
+    this.store = store;
+  }
+
+  persist(items) { return this.store.setItem(this.key, JSON.stringify(items)) }
+
+  pop() {
+    let items = this.toArray();
+    let item = items.pop();
+    this.persist(items);
+    return item;
+  }
+
+  push(item) {
+    let items = this.toArray();
+    items.push(item);
+    this.persist(items);
+    return items.length;
+  }
+
+  shift() {
+    let items = this.toArray();
+    let item = items.shift();
+    this.persist(items);
+    return item;
+  }
+
+  unshift(item) {
+    let items = this.toArray();
+    items.unshift(item);
+    this.persist(items);
+    return items.length;
+  }
+
+  toArray() { return JSON.parse(this.store.getItem(this.key) || '[]') }
+}
+
+class DebrisSet extends DebrisList {
+  persist(items) {
+    let set = new Set(items);
+    return this.store.setItem(this.key, JSON.stringify(Array.from(set)));
+  }
+}
+
 class DebrisLibrary {
-  constructor(key = "debris", store = window.localStorage) {
+  constructor(key = "debris-lib", store = window.localStorage) {
     this.key = key
     this.store = store;
   }
@@ -62,12 +132,12 @@ class DebrisTrack {
 }
 
 class DebrisQueue {
-  constructor(key, store, itemClass) {
+  constructor(key = "debris-q", store = window.localStorage) {
     this.key = key;
     this.store = store;
-    this.itemClass = itemClass;
-    this.queue = this.fetchFromStore(); // make queue private
   }
+
+  toArray() { return JSON.parse(this.store.getItem(this.key) || '[]') }
 
   fetchFromStore() { // make private?
     let item = this.store.getItem(this.key);
