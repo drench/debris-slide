@@ -1,3 +1,25 @@
+const DebrisSet = new Proxy(Set, {
+  construct: (target, args) => new Proxy(new target(...args), {
+    get: (obj, name) =>  {
+      switch (name) {
+        case "dirty": { return obj.dirty ? true : false; }
+        case "add":
+        case "clear":
+        case "delete": { obj.dirty = true }
+        default: {
+          if (typeof obj[name] === "function") return obj[name].bind(obj);
+          else return obj[name];
+        }
+      }
+    },
+    set: (obj, prop, val, receiver) => {
+      obj[prop] = val;
+      if (prop != "dirty") obj.dirty = true;
+      return true;
+    }
+  })
+});
+
 class SetSerializer {
   static parse(string) { return new Set(JSON.parse(string)) }
   static stringify(set) { return JSON.stringify(Array.from(set)) }
