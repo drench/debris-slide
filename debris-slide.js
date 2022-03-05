@@ -1,51 +1,23 @@
-const DebrisList = new Proxy(Array, {
-  construct: (target, args) => new Proxy(new target(...args), {
-    get: (obj, name) =>  {
-      switch (name) {
-        case "dirty": { return obj.dirty ? true : false; }
-        case "fill":
-        case "pop":
-        case "push":
-        case "reverse":
-        case "slice":
-        case "sort":
-        case "splice":
-        case "unshift": { obj.dirty = true }
-        default: {
-          if (typeof obj[name] === "function") return obj[name].bind(obj);
-          else return obj[name];
-        }
+const DebrisFactory = function(type, ...mutables) {
+  return new Proxy(type, {
+    construct: (target, args) => new Proxy(new target(...args), {
+      get: (obj, prop) => {
+        if (prop == "dirty") return obj.dirty ? true : false;
+        if (mutables.includes(prop)) obj.dirty = true;
+        if (typeof obj[prop] === "function") return obj[prop].bind(obj);
+        else return obj[prop];
+      },
+      set: (obj, prop, val, _receiver) => {
+        obj[prop] = val;
+        if (prop != "dirty") obj.dirty = true;
+        return true;
       }
-    },
-    set: (obj, prop, val, receiver) => {
-      obj[prop] = val;
-      if (prop != "dirty") obj.dirty = true;
-      return true;
-    }
-  })
-});
+    })
+  });
+};
 
-const DebrisSet = new Proxy(Set, {
-  construct: (target, args) => new Proxy(new target(...args), {
-    get: (obj, name) =>  {
-      switch (name) {
-        case "dirty": { return obj.dirty ? true : false; }
-        case "add":
-        case "clear":
-        case "delete": { obj.dirty = true }
-        default: {
-          if (typeof obj[name] === "function") return obj[name].bind(obj);
-          else return obj[name];
-        }
-      }
-    },
-    set: (obj, prop, val, receiver) => {
-      obj[prop] = val;
-      if (prop != "dirty") obj.dirty = true;
-      return true;
-    }
-  })
-});
+const DebrisList = DebrisFactory(Array, "fill", "pop", "push", "reverse", "shift", "slice", "sort", "splice", "unshift");
+const DebrisSet = DebrisFactory(Set, "add", "clear", "delete");
 
 class SetSerializer {
   static parse(string) { return new Set(JSON.parse(string)) }
