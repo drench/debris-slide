@@ -1,3 +1,40 @@
+const StoredObjectFactory = (args) => {
+  return new Proxy(args.type, {
+    construct: (target, [options]) => {
+      let instance = new args.type(args.parse(options.storage.getItem(options.key)));
+      args.mutables.forEach(method => {
+        let origMethod = instance[method]; // make sure it's a function?
+        instance[method] = function () {
+          let result = origMethod.bind(instance)(...arguments);
+          options.storage.setItem(options.key, args.stringify(instance)); // make this async?
+          return result;
+        };
+      });
+
+      return new Proxy(instance, {
+        get: (obj, prop) => {
+          if (typeof obj[prop] === "function") return obj[prop].bind(obj);
+          else return obj[prop];
+        }
+      });
+    }
+  });
+};
+
+const StoredMap = StoredObjectFactory({
+  mutables: ["clear", "delete", "set"],
+  parse: function (string) { return JSON.parse(string || '[]') },
+  stringify: function (map) { return JSON.stringify(Array.from(map)) },
+  type: Map
+});
+
+const StoredSet = StoredObjectFactory({
+  mutables: ["add", "clear", "delete"],
+  parse: function (string) { return JSON.parse(string || '[]') },
+  stringify: function (set) { return JSON.stringify(Array.from(set)) },
+  type: Set
+});
+
 const DebrisFactory = function(type, mutables = [], callbacks = {}) {
   return new Proxy(type, {
     construct: (target, args) => {
