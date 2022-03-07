@@ -3,9 +3,8 @@ const StoredObjectFactory = (args) => {
     construct: (target, [options]) => {
       let instance = new args.type(args.parse(options.storage.getItem(options.key)));
       args.mutables.forEach(method => {
-        let origMethod = instance[method]; // make sure it's a function?
-        instance[method] = function () {
-          let result = origMethod.bind(instance)(...arguments);
+        instance[method.name] = function () {
+          let result = method.bind(instance)(...arguments);
           options.storage.setItem(options.key, args.stringify(instance)); // make this async?
           return result;
         };
@@ -22,14 +21,14 @@ const StoredObjectFactory = (args) => {
 };
 
 const StoredMap = StoredObjectFactory({
-  mutables: ["clear", "delete", "set"],
+  mutables: [Map.prototype.clear, Map.prototype.delete, Map.prototype.set],
   parse: function (string) { return JSON.parse(string || '[]') },
   stringify: function (map) { return JSON.stringify(Array.from(map)) },
   type: Map
 });
 
 const StoredSet = StoredObjectFactory({
-  mutables: ["add", "clear", "delete"],
+  mutables: [Set.prototype.add, Set.prototype.clear, Set.prototype.delete],
   parse: function (string) { return JSON.parse(string || '[]') },
   stringify: function (set) { return JSON.stringify(Array.from(set)) },
   type: Set
