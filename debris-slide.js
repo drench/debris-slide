@@ -2,7 +2,7 @@ const StoredObjectFactory = (args) => {
   return new Proxy(args.type, {
     construct: (target, [options]) => {
       let instance = new args.type(args.parse(options.storage.getItem(options.key)));
-      args.mutables.forEach(method => {
+      args.mutables.map(m => args.type.prototype[m]).forEach(method => {
         instance[method.name] = function () {
           let result = method.bind(instance)(...arguments);
           options.storage.setItem(options.key, args.stringify(instance)); // make this async?
@@ -21,14 +21,14 @@ const StoredObjectFactory = (args) => {
 };
 
 const StoredMap = StoredObjectFactory({
-  mutables: [Map.prototype.clear, Map.prototype.delete, Map.prototype.set],
+  mutables: ['clear', 'delete', 'set'],
   parse: function (string) { return JSON.parse(string || '[]') },
   stringify: function (map) { return JSON.stringify(Array.from(map)) },
   type: Map
 });
 
 const StoredSet = StoredObjectFactory({
-  mutables: [Set.prototype.add, Set.prototype.clear, Set.prototype.delete],
+  mutables: ['add', 'clear', 'delete'],
   parse: function (string) { return JSON.parse(string || '[]') },
   stringify: function (set) { return JSON.stringify(Array.from(set)) },
   type: Set
