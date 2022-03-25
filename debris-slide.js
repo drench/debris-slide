@@ -33,6 +33,20 @@ const StoredMap = StoredObjectFactory({
   type: Map
 });
 
+class StoredQueue {
+  constructor(options) { this.map = new StoredMap(options) }
+
+  enqueue(item, timestamp = new Date()) { return this.map.set(timestamp, item) }
+
+  dequeue() {
+    let iter = this.map.entries().next();
+    if (iter.done) return;
+    let [timestamp, value] = iter.value;
+    this.map.delete(timestamp);
+    return value;
+  }
+}
+
 const StoredSet = StoredObjectFactory({
   mutables: ['add', 'clear', 'delete'],
   parse: function (string) { return JSON.parse(string || '[]') },
