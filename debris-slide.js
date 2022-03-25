@@ -45,6 +45,12 @@ class StoredQueue {
     this.map.delete(timestamp);
     return value;
   }
+
+  peek() {
+    let iter = this.map.entries().next();
+    if (iter.done) return;
+    return iter.value[1];
+  }
 }
 
 const StoredSet = StoredObjectFactory({
