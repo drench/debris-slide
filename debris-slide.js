@@ -20,6 +20,12 @@ const StoredObjectFactory = (args) => {
   });
 };
 
+class StoredLog {
+  constructor(options) { this.map = new StoredMap(options) }
+  add(item, timestamp = new Date()) { this.map.set(timestamp, item) }
+  entries() { return this.map.entries() }
+}
+
 const StoredMap = StoredObjectFactory({
   mutables: ['clear', 'delete', 'set'],
   parse: function (string) { return JSON.parse(string || '[]') },
