@@ -54,53 +54,6 @@ const StoredSet = StoredObjectFactory({
   type: Set
 });
 
-const DebrisFactory = function(type, mutables = [], callbacks = {}) {
-  return new Proxy(type, {
-    construct: (target, args) => {
-      let instance = callbacks.loader ? callbacks.loader() : new target(...args);
-      mutables.forEach(method => {
-        let origMethod = instance[method]; // make sure it's a function?
-        instance[method] = function () {
-          let result = origMethod.bind(instance)(...arguments);
-          if (callbacks.onMutate) callbacks.onMutate(instance, method);
-          return result;
-        };
-      });
-
-      return new Proxy(instance, {
-        get: (obj, prop) => {
-          if (typeof obj[prop] === "function") return obj[prop].bind(obj);
-          else return obj[prop];
-        },
-        set: (obj, prop, val, _receiver) => {
-          obj[prop] = val;
-          return true;
-        }
-      })
-    }
-  });
-};
-
-// Array#length = 0 mutates but this won't catch it
-const DebrisList = DebrisFactory(Array, ["fill", "pop", "push", "reverse", "shift", "slice", "sort", "splice", "unshift"], {
-  onMutate: (list, prop) => { sessionStorage.setItem('dl', JSON.stringify(list)) }
-});
-
-const DebrisSet = DebrisFactory(Set, ["add", "clear", "delete"], {
-  loader: (set) => { console.log("loading!"); return new Set(JSON.parse(sessionStorage.getItem('ds') || '[]')) },
-  onMutate: (set, prop) => { console.log("mutating!"); sessionStorage.setItem('ds', JSON.stringify(Array.from(set))) }
-});
-
-const DebrisMap = DebrisFactory(Map, ["clear", "delete", "set"], {
-  loader: (map) => { console.log("loading!"); return new Map(JSON.parse(sessionStorage.getItem('dm') || '[]')) },
-  onMutate: (map, prop) => { console.log("mutating!"); sessionStorage.setItem('dm', JSON.stringify(Array.from(map))) }
-});
-
-class SetSerializer {
-  static parse(string) { return new Set(JSON.parse(string)) }
-  static stringify(set) { return JSON.stringify(Array.from(set)) }
-}
-
 class DebrisLibrary {
   constructor(key = "debris-lib", store = window.localStorage) {
     this.key = key
