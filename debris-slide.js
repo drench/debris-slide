@@ -117,33 +117,6 @@ class DebrisTrack {
   }
 }
 
-class DebrisQueue {
-  constructor(key = "debris-q", store = window.localStorage) {
-    this.key = key;
-    this.store = store;
-  }
-
-  toArray() { return JSON.parse(this.store.getItem(this.key) || '[]') }
-
-  fetchFromStore() { // make private?
-    let item = this.store.getItem(this.key);
-    return JSON.parse(item || "[]").map(i => { new itemClass(i) });
-  }
-
-  persist() { // make private?
-    this.store.setItem(this.key, JSON.stringify(this.queue));
-  }
-
-  pop() {
-    let item = this.queue.pop();
-    this.persist();
-    return item;
-  }
-
-  push(item) { this.queue.push(item); this.persist(); }
-  unshift(item) { this.queue.unshift(item); this.persist(); }
-}
-
 class DebrisPlayer {
   constructor(element) {
     this.element = element;
@@ -201,9 +174,6 @@ class DebrisPlayer {
     console.debug(`Now playing ${nextTrack}`);
   }
 }
-
-// Consider this for localStorage seralize/deserialize:
-// https://stackoverflow.com/a/4762411/73779
 
 window.addEventListener('load', (event) => {
   window.player = new DebrisPlayer(document.getElementById("player"));
