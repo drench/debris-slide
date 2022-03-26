@@ -36,13 +36,16 @@ const StoredMap = StoredObjectFactory({
 class StoredQueue {
   constructor(options) { this.map = new StoredMap(options) }
 
-  enqueue(item, timestamp = new Date()) { return this.map.set(timestamp, item) }
+  enqueue(item, index = (new Date().getTime())) {
+    while (this.map.has(index)) index += 1; // silly hack
+    return this.map.set(index, item);
+  }
 
   dequeue() {
     let iter = this.map.entries().next();
     if (iter.done) return;
-    let [timestamp, value] = iter.value;
-    this.map.delete(timestamp);
+    let [index, value] = iter.value;
+    this.map.delete(index);
     return value;
   }
 
@@ -123,9 +126,23 @@ class DebrisTrack {
   }
 }
 
+// The play queue is where the "next" always comes from. This is a StoredQueue.
+// When something is played, it's pushed to the log right at the start. This is a StoredLog.
+// The play list is just an Array. Logic goes like this:
+// Hit play. Pull the next track from the StoredQueue. Push it to the StoredLog and playList.
+// If the user hits backwards, go backward in the playList, play it and push it to the StoredLog
+// If the user hits forward:
+//  If there's something "next" in the playList, play it and push it to the StoredLog
+//  If there's nothing "next":
+//    Grab the "next" from the StoredQueue
+//      If there's nothing "next" do nothing
+//      Else push it to the StoreLog and playList and play it
+
 class DebrisPlayer {
-  constructor(element) {
+  constructor(element, playQueue, playLog) {
     this.element = element;
+    this.playQueue = playQueue;
+    this.playLog = playLog;
     this.playList = [];
     this.playPosition = -1;
     this.stopPlaying = false;
@@ -168,19 +185,25 @@ class DebrisPlayer {
 
   playNext(delta) {
     delta ||= 1
-    let playListLength = this.playList.length;
 
-    if (playListLength == 0) return console.debug('the playList is empty!');
-    if (!this.playList[this.playPosition + delta])
-      return console.debug('end of the playList!');
+    if (!this.playList[this.playPosition + delta]) { // TODO: this really only works for delta == 1
+      let nextEntry = this.playQueue.dequeue();
+      if (nextEntry) this.playList.push(nextEntry)
+      else return console.debug('the playQueue is empty!');
+    }
+
+    let playListLength = this.playList.length;
 
     this.playPosition += delta;
     let nextTrack = this.playList[this.playPosition];
-    this.element.src = nextTrack.url;
+    this.element.src = nextTrack;
+    this.playLog.add(nextTrack);
     console.debug(`Now playing ${nextTrack}`);
   }
 }
 
 window.addEventListener('load', (event) => {
-  window.player = new DebrisPlayer(document.getElementById("player"));
+  let log = new StoredLog({ key: "debrisLog", storage: window.localStorage });
+  let queue = new StoredQueue({ key: "debrisQueue", storage: window.localStorage });
+  window.player = new DebrisPlayer(document.getElementById("player"), queue, log);
 });
